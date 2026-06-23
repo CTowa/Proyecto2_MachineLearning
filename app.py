@@ -9,6 +9,9 @@ import streamlit as st
 # ============================================================
 # Configuracion de la interfaz Streamlit
 # ============================================================
+# Mapa con P2_ML.pdf:
+# - 3.1: interfaz opcional Streamlit dentro de la arquitectura del pipeline.
+# - 3.5: simulacion de inferencia y politicas de umbrales probabilisticos.
 ROOT = Path(__file__).parent
 DEFAULT_OUTPUT_DIR = ROOT / "outputs"
 TEST_PATH = ROOT / "eco_acoustic_test.csv"
@@ -28,6 +31,7 @@ ZONE_LABELS = {
 }
 
 ZONE_MESSAGES = {
+    # P2_ML.pdf 3.5 - Tres estados operativos segun la probabilidad predictiva.
     "confianza": "Clasificacion automatica: la probabilidad supera el umbral operativo.",
     "incertidumbre": "Clasificacion asistida: el registro debe revisarse por un experto.",
     "rechazo": "Descarte automatico: la confianza es baja y se mitiga el riesgo de falsos positivos.",
@@ -81,6 +85,7 @@ def load_csv(path: Path) -> pd.DataFrame:
 
 
 def get_paths(output_dir: Path) -> dict[str, Path]:
+    # P2_ML.pdf 3.1 - La interfaz consume las salidas generadas por el pipeline.
     return {
         "predictions": output_dir / "test_predictions.csv",
         "classification_metrics": output_dir / "tables" / "classification_metrics.csv",
@@ -135,6 +140,7 @@ def selected_mel_table(test_row: pd.Series) -> pd.DataFrame:
 
 
 def decision_box(zone: str, confidence: float) -> None:
+    # P2_ML.pdf 3.5 - Visualiza la politica de confianza/incertidumbre/rechazo.
     color = ZONE_COLORS.get(zone, "#333333")
     label = ZONE_LABELS.get(zone, zone)
     message = ZONE_MESSAGES.get(zone, "")
@@ -150,6 +156,7 @@ def decision_box(zone: str, confidence: float) -> None:
 
 
 def render_sidebar(prediction_df: pd.DataFrame) -> pd.DataFrame:
+    # P2_ML.pdf - Bonus Streamlit: escenarios precargados para simular inferencia.
     st.sidebar.header("Escenarios")
     zone_options = ["todas", *sorted(prediction_df["decision_zone"].dropna().unique())]
     selected_zone = st.sidebar.selectbox("Filtrar por zona", zone_options)
@@ -167,6 +174,7 @@ def render_sidebar(prediction_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def render_inference_tab(prediction_df: pd.DataFrame, test_df: pd.DataFrame) -> None:
+    # P2_ML.pdf 3.5 - Pantalla principal de inferencia con probabilidades y umbral.
     filtered_df = render_sidebar(prediction_df)
     recording_ids = filtered_df["recording_id"].astype(str).tolist()
     selected_recording = st.sidebar.selectbox("Seleccionar recording_id", recording_ids)
@@ -211,6 +219,7 @@ def render_inference_tab(prediction_df: pd.DataFrame, test_df: pd.DataFrame) -> 
 
 
 def render_metrics_tab(paths: dict[str, Path]) -> None:
+    # P2_ML.pdf 3.2-3.4 - Presenta metricas de reduccion, clustering y clasificacion.
     st.subheader("Metricas del pipeline")
 
     if paths["classification_metrics"].exists():
@@ -243,6 +252,7 @@ def render_metrics_tab(paths: dict[str, Path]) -> None:
 
 
 def render_figures_tab(paths: dict[str, Path]) -> None:
+    # P2_ML.pdf 3.2-3.4 - Muestra las figuras que se pueden insertar en el informe.
     st.subheader("Figuras generadas")
     figures = [
         ("Distribucion de clases", "target_distribution.png"),

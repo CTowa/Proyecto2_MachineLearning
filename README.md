@@ -3,6 +3,28 @@
 Este proyecto implementa un pipeline para clasificar señales eco-acusticas usando las 64 variables `mel_0` a `mel_63`.
 El MLP se implementa con NumPy para incluir Dropout y Batch Normalization sin depender de frameworks pesados.
 
+## Relacion con las indicaciones del PDF
+
+Esta tabla conecta lo pedido en `P2_ML.pdf` con la parte del proyecto que lo implementa.
+
+| Seccion del PDF | Que pide | Donde se implementa | Salida util |
+| --- | --- | --- | --- |
+| 3.1 Resumen e introduccion al espacio vectorial | Definir el problema, cargar CSV y trabajar con `X in R64` | `main.py`: `load_data`, `get_mel_columns`, `get_feature_columns`, `save_dataset_summary` | `outputs/tables/dataset_summary.csv`, `outputs/figures/target_distribution.png` |
+| 3.1 Arquitectura del pipeline | Mostrar flujo desde CSV hasta inferencia/Streamlit | `main.py`: `main`; `app.py`: interfaz de inferencia | README + app Streamlit |
+| 3.2 Reduccion dimensional | Comparar PCA vs metodo no lineal | `main.py`: `run_dimensionality_analysis` | `outputs/tables/dimensionality_metrics.csv`, `outputs/figures/pca_projection.png`, `outputs/figures/tsne_projection.png` |
+| 3.2 Reporte cuantitativo | Medir tiempos y preservacion geometrica | `main.py`: columnas `seconds`, `explained_variance_ratio`, `trustworthiness_10nn` | `outputs/tables/dimensionality_metrics.csv` |
+| 3.3 Clustering | Comparar dos metodos no supervisados distintos | `main.py`: `run_clustering_analysis` con GMM y DBSCAN | `outputs/tables/clustering_metrics.csv`, `outputs/figures/gmm_clusters.png`, `outputs/figures/dbscan_clusters.png` |
+| 3.3 Validacion interna | Usar metricas como Silhouette | `main.py`: `score_clustering` | `outputs/tables/clustering_metrics.csv` |
+| 3.4 MLP | Definir topologia, loss y regularizacion | `main.py`: `NumpyMLPClassifier` | `outputs/tables/mlp_history_*.csv`, `outputs/figures/mlp_loss_curves.png` |
+| 3.4 Dropout y BatchNorm | Comparar posicion de Dropout y Batch Normalization | `main.py`: variantes `plain`, `dropout_then_batchnorm`, `batchnorm_then_dropout` | `outputs/figures/mlp_loss_curves.png`, `outputs/figures/mlp_f1_curves.png` |
+| 3.4 MLP vs ensambles | Comparar con F1 y matrices de confusion | `main.py`: `evaluate_mlp_models`, `evaluate_ensemble_models`, `save_confusion_matrix` | `outputs/tables/classification_metrics.csv`, `outputs/figures/best_validation_confusion_matrix.png` |
+| 3.5 MLOps y negocio | Medir costo computacional e inferencia | `main.py`: `fit_seconds`, `predict_ms_per_sample` | `outputs/tables/classification_metrics.csv` |
+| 3.5 Umbrales operativos | Aplicar confianza, incertidumbre y rechazo | `main.py`: `confidence_zone`, `build_prediction_table`; `app.py`: `decision_box` | `outputs/test_predictions.csv`, Streamlit |
+| Bonus Streamlit | Interfaz informativa con escenarios precargados | `app.py` | `http://localhost:8501` |
+| 3.6 Contribution statement | Tabla de coevaluacion del equipo | No corresponde al codigo; debe agregarse en el informe LaTeX | Tabla final del informe |
+
+En `main.py` y `app.py` tambien hay comentarios con referencias como `P2_ML.pdf 3.2` para ubicar rapidamente que parte del codigo responde a cada indicacion.
+
 ## Instalacion
 
 ```bash

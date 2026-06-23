@@ -40,8 +40,12 @@ from sklearn.preprocessing import LabelEncoder, StandardScaler
 # ============================================================
 # Configuracion general del proyecto
 # ============================================================
-# El objetivo principal del enunciado es clasificar especies (`species_id`)
-# usando el espacio vectorial de 64 caracteristicas Mel: mel_0 ... mel_63.
+# Mapa con P2_ML.pdf:
+# - 3.1: definicion del problema y dataset como X in R64.
+# - 3.2: PCA vs t-SNE para reduccion dimensional.
+# - 3.3: clustering no supervisado con GMM y DBSCAN.
+# - 3.4: MLP vs modelos de ensamble, F1 y matrices de confusion.
+# - 3.5: umbrales de decision para mitigacion de riesgos.
 RANDOM_STATE = 42
 DEFAULT_TARGET = "species_id"
 
@@ -105,7 +109,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def configure_plots() -> None:
-    # Tamano de fuente >= 14 para evitar penalizaciones en las figuras del informe.
+    # P2_ML.pdf - Penalizacion: las figuras deben usar fuente >= 14.
     plt.rcParams.update(
         {
             "figure.figsize": (10, 7),
@@ -134,20 +138,20 @@ def prepare_output_paths(output_dir: str) -> OutputPaths:
 
 
 def load_data(train_path: str, test_path: str) -> tuple[pd.DataFrame, pd.DataFrame]:
-    # Paso 1: lectura de CSV de entrenamiento y prueba.
+    # P2_ML.pdf 3.1 - Ingesta del CSV al inicio del pipeline.
     train_df = pd.read_csv(train_path)
     test_df = pd.read_csv(test_path)
     return train_df, test_df
 
 
 def get_mel_columns(df: pd.DataFrame) -> list[str]:
-    # Selecciona solo las variables numericas del espacio X in R64.
+    # P2_ML.pdf 3.1 - Define X in R64 usando mel_0 ... mel_63.
     mel_columns = [column for column in df.columns if column.startswith("mel_")]
     return sorted(mel_columns, key=lambda column: int(column.split("_")[1]))
 
 
 def get_feature_columns(df: pd.DataFrame, target: str, include_metadata: bool) -> list[str]:
-    # Por defecto se usan solo mel_0..mel_63, como pide el enunciado.
+    # P2_ML.pdf 3.1 - Por defecto se respeta el espacio vectorial X in R64.
     feature_columns = get_mel_columns(df)
 
     if include_metadata:
@@ -192,7 +196,7 @@ def save_dataset_summary(
     feature_columns: list[str],
     paths: OutputPaths,
 ) -> None:
-    # Paso 2: resumen inicial del dataset y distribucion de clases.
+    # P2_ML.pdf 3.1 - Resumen del dataset, target y distribucion de clases.
     summary = pd.DataFrame(
         [
             {"partition": "train", "rows": len(train_df), "columns": train_df.shape[1]},
@@ -241,7 +245,7 @@ def plot_projection(
     output_path: Path,
     target: str,
 ) -> None:
-    # Grafico 2D usado para PCA y t-SNE.
+    # P2_ML.pdf 3.2 - Visualizacion 2D para PCA y t-SNE.
     labels_array = np.asarray(labels)
     unique_labels = sorted(pd.unique(labels_array))
     cmap = plt.get_cmap("tab10")
@@ -273,12 +277,13 @@ def run_dimensionality_analysis(
     target: str,
     paths: OutputPaths,
 ) -> pd.DataFrame:
-    # Paso 3: exploracion geometrica y reduccion de dimensionalidad.
+    # P2_ML.pdf 3.2 - Exploracion geometrica y reduccion dimensional.
+    # Se contrasta un metodo lineal (PCA) con uno no lineal (t-SNE).
     rows: list[dict[str, Any]] = []
 
     print("\n=== Reduccion dimensional ===")
 
-    # Algoritmo PCA: metodo lineal. Sirve para medir varianza global retenida.
+    # P2_ML.pdf 3.2 - PCA: metodo lineal; reporta varianza explicada y tiempo.
     start = time.perf_counter()
     pca = PCA(n_components=2, random_state=RANDOM_STATE)
     pca_embedding = pca.fit_transform(x_scaled)
@@ -302,7 +307,7 @@ def run_dimensionality_analysis(
         target,
     )
 
-    # Algoritmo t-SNE: metodo no lineal. Sirve para visualizar vecindarios locales.
+    # P2_ML.pdf 3.2 - t-SNE: metodo no lineal; reporta preservacion local y tiempo.
     perplexity = min(30, max(5, (len(x_scaled) - 1) // 3))
     start = time.perf_counter()
     tsne = TSNE(
@@ -347,7 +352,7 @@ def valid_cluster_count(labels: np.ndarray) -> int:
 
 
 def score_clustering(x_cluster: np.ndarray, labels: np.ndarray) -> dict[str, float]:
-    # Metricas internas: no usan las etiquetas reales, solo la geometria de los datos.
+    # P2_ML.pdf 3.3 - Metricas internas: Silhouette, Calinski-Harabasz y Davies-Bouldin.
     cluster_count = valid_cluster_count(labels)
     non_noise_mask = labels != -1
     noise_ratio = float(np.mean(labels == -1))
@@ -404,17 +409,18 @@ def plot_cluster_projection(
 
 
 def run_clustering_analysis(x_scaled: np.ndarray, paths: OutputPaths) -> pd.DataFrame:
-    # Paso 4: mineria de patrones no supervisada con GMM y DBSCAN.
+    # P2_ML.pdf 3.3 - Mineria de patrones y estructuras de clustering.
+    # Se comparan dos paradigmas: probabilistico (GMM) y densidad (DBSCAN).
     print("\n=== Clustering no supervisado ===")
 
-    # Se reduce primero con PCA al 95% de varianza para estabilizar clustering.
+    # P2_ML.pdf 3.3 - Preprocesamiento: PCA conserva 95% de varianza para clustering.
     pca_for_clustering = PCA(n_components=0.95, random_state=RANDOM_STATE)
     x_cluster = pca_for_clustering.fit_transform(x_scaled)
     pca_2d = PCA(n_components=2, random_state=RANDOM_STATE).fit_transform(x_scaled)
 
     rows: list[dict[str, Any]] = []
 
-    # Algoritmo GMM: clustering probabilistico con distinto numero de componentes.
+    # P2_ML.pdf 3.3 - GMM: se prueba distinto numero de componentes y se reporta BIC.
     max_k = min(8, len(x_cluster) - 1)
     for n_components in range(2, max_k + 1):
         start = time.perf_counter()
@@ -437,7 +443,7 @@ def run_clustering_analysis(x_scaled: np.ndarray, paths: OutputPaths) -> pd.Data
             }
         )
 
-    # Algoritmo DBSCAN: clustering por densidad. eps se estima con vecinos cercanos.
+    # P2_ML.pdf 3.3 - DBSCAN: clustering por densidad; eps se estima con vecinos cercanos.
     min_samples = max(5, int(math.sqrt(x_cluster.shape[1] * 4)))
     neighbors = NearestNeighbors(n_neighbors=min_samples)
     neighbors.fit(x_cluster)
@@ -465,7 +471,7 @@ def run_clustering_analysis(x_scaled: np.ndarray, paths: OutputPaths) -> pd.Data
     metrics_df = pd.DataFrame(rows)
     metrics_df.to_csv(paths.tables / "clustering_metrics.csv", index=False)
 
-    # Se guarda una figura para el mejor GMM y el mejor DBSCAN segun Silhouette.
+    # P2_ML.pdf 3.3 - Se grafica el mejor GMM y DBSCAN segun Silhouette.
     for algorithm in ["GMM", "DBSCAN"]:
         subset = metrics_df[metrics_df["algorithm"] == algorithm].dropna(subset=["silhouette"])
         if subset.empty:
@@ -498,7 +504,7 @@ def run_clustering_analysis(x_scaled: np.ndarray, paths: OutputPaths) -> pd.Data
 
 
 def build_ensemble_models() -> dict[str, Pipeline]:
-    # Paso 5A: modelos de ensamble para comparar contra el MLP.
+    # P2_ML.pdf 3.4 - Modelos de ensamble para comparar contra el MLP.
     return {
         "hist_gradient_boosting": Pipeline(
             steps=[
@@ -546,7 +552,7 @@ def evaluate_ensemble_models(
     y_train: pd.Series,
     y_valid: pd.Series,
 ) -> list[ClassifierCandidate]:
-    # Entrena cada ensamble y calcula metricas sobre validacion.
+    # P2_ML.pdf 3.4 - Benchmarking: F1, accuracy y costo de inferencia.
     candidates: list[ClassifierCandidate] = []
 
     print("\n=== Modelos de ensamble ===")
@@ -604,9 +610,10 @@ def compute_class_weights(encoded_labels: np.ndarray) -> np.ndarray:
 
 
 class NumpyMLPClassifier:
-    # Paso 5B: red neuronal MLP implementada con NumPy.
+    # P2_ML.pdf 3.4 - Red neuronal MLP implementada con NumPy.
     # Topologia por defecto: entrada -> 128 -> 64 -> salida.
-    # La funcion de perdida es Cross-Entropy ponderada por clase.
+    # Loss function: Cross-Entropy multiclase ponderada por clase.
+    # Regularizacion evaluada: Dropout y Batch Normalization en distinto orden.
     def __init__(
         self,
         input_dim: int,
@@ -675,7 +682,7 @@ class NumpyMLPClassifier:
         momentum: float = 0.90,
         eps: float = 1e-5,
     ) -> tuple[np.ndarray, dict[str, np.ndarray]]:
-        # Batch Normalization estabiliza las activaciones durante entrenamiento.
+        # P2_ML.pdf 3.4 - Batch Normalization para estabilizar curvas de aprendizaje.
         gamma = self.params[f"gamma{layer}"]
         beta = self.params[f"beta{layer}"]
 
@@ -720,7 +727,7 @@ class NumpyMLPClassifier:
         return dx, dgamma, dbeta
 
     def _dropout_forward(self, x: np.ndarray, training: bool) -> tuple[np.ndarray, np.ndarray | None]:
-        # Dropout apaga neuronas al azar para reducir sobreajuste.
+        # P2_ML.pdf 3.4 - Dropout para reducir sobreajuste.
         if not training or self.dropout_rate <= 0:
             return x, None
 
@@ -738,7 +745,7 @@ class NumpyMLPClassifier:
         x: np.ndarray,
         training: bool,
     ) -> tuple[np.ndarray, list[dict[str, Any]], dict[str, np.ndarray]]:
-        # Propagacion hacia adelante. La variante cambia el orden Dropout/BatchNorm.
+        # P2_ML.pdf 3.4 - Aqui se evalua la posicion relativa Dropout/BatchNorm.
         activations = x
         hidden_caches: list[dict[str, Any]] = []
 
@@ -772,7 +779,7 @@ class NumpyMLPClassifier:
         y: np.ndarray,
         class_weights: np.ndarray,
     ) -> tuple[float, np.ndarray]:
-        # Cross-Entropy multiclase + regularizacion L2 sobre los pesos.
+        # P2_ML.pdf 3.4 - Loss Function: Cross-Entropy multiclase + L2.
         shifted_logits = logits - logits.max(axis=1, keepdims=True)
         exp_logits = np.exp(shifted_logits)
         probabilities = exp_logits / exp_logits.sum(axis=1, keepdims=True)
@@ -910,7 +917,7 @@ class NumpyMLPClassifier:
         batch_size: int,
         class_weights: np.ndarray,
     ) -> tuple[pd.DataFrame, int]:
-        # Entrena por epocas y guarda la mejor version segun F1 macro en validacion.
+        # P2_ML.pdf 3.4 - Curvas Loss vs epocas y seleccion por F1 macro.
         history: list[dict[str, float | int]] = []
         best_state = self.get_state()
         best_f1 = -np.inf
@@ -971,7 +978,7 @@ def train_mlp_variant(
     epochs: int,
     batch_size: int,
 ) -> dict[str, Any]:
-    # Entrena una variante especifica del MLP: plain, dropout_then_batchnorm, etc.
+    # P2_ML.pdf 3.4 - Entrena una variante de topologia/regularizacion del MLP.
     scaler = StandardScaler()
     x_train_scaled = scaler.fit_transform(x_train).astype(np.float32)
     x_valid_scaled = scaler.transform(x_valid).astype(np.float32)
@@ -1017,7 +1024,7 @@ def train_mlp_on_full_data(
     epochs: int,
     batch_size: int,
 ) -> dict[str, Any]:
-    # Reentrena el mejor MLP con todos los datos de train antes de predecir test.
+    # P2_ML.pdf 3.4 - Reentrena el mejor MLP con todo train antes de test.
     scaler = StandardScaler()
     x_scaled = scaler.fit_transform(x).astype(np.float32)
     encoder, y_encoded, _ = encode_labels(y)
@@ -1040,7 +1047,7 @@ def train_mlp_on_full_data(
 
 
 def plot_mlp_histories(histories: dict[str, pd.DataFrame], paths: OutputPaths) -> None:
-    # Figuras solicitadas: curvas de Loss y F1 por epoca.
+    # P2_ML.pdf 3.4 - Figuras para analizar estabilidad: Loss y F1 por epoca.
     plt.figure()
     for variant, history in histories.items():
         plt.plot(history["epoch"], history["valid_loss"], label=f"{variant} - valid")
@@ -1073,7 +1080,7 @@ def evaluate_mlp_models(
     batch_size: int,
     paths: OutputPaths,
 ) -> list[ClassifierCandidate]:
-    # Compara tres configuraciones de regularizacion de la red MLP.
+    # P2_ML.pdf 3.4 - Experimento: plain vs Dropout-BN vs BN-Dropout.
     variants = ["plain", "dropout_then_batchnorm", "batchnorm_then_dropout"]
     histories: dict[str, pd.DataFrame] = {}
     candidates: list[ClassifierCandidate] = []
@@ -1136,7 +1143,7 @@ def save_confusion_matrix(
     title: str,
     output_path: Path,
 ) -> None:
-    # Matriz de confusion para analizar que clases se confunden entre si.
+    # P2_ML.pdf 3.4 - Matriz de confusion para analizar errores por clase.
     fig, ax = plt.subplots(figsize=(9, 8))
     ConfusionMatrixDisplay.from_predictions(
         y_true,
@@ -1153,7 +1160,7 @@ def save_confusion_matrix(
 
 
 def select_best_classifier(candidates: list[ClassifierCandidate]) -> ClassifierCandidate:
-    # El mejor modelo se elige primero por F1 macro y luego por accuracy.
+    # P2_ML.pdf 3.4 - Se prioriza F1 macro por el desbalance de clases.
     if not candidates:
         raise RuntimeError("No se entreno ningun clasificador.")
 
@@ -1165,7 +1172,7 @@ def select_best_classifier(candidates: list[ClassifierCandidate]) -> ClassifierC
 
 
 def confidence_zone(confidence: float) -> str:
-    # Paso 6: politica de mitigacion de riesgo basada en probabilidad.
+    # P2_ML.pdf 3.5 - Politica de mitigacion: confianza, incertidumbre y rechazo.
     if confidence >= CONFIDENCE_THRESHOLD:
         return "confianza"
     if confidence >= REVIEW_THRESHOLD:
@@ -1182,7 +1189,7 @@ def build_prediction_table(
     id_column: str = "recording_id",
     y_true: pd.Series | None = None,
 ) -> pd.DataFrame:
-    # Crea la tabla final con prediccion, probabilidad y zona operativa.
+    # P2_ML.pdf 3.5 - Vector de probabilidades y zona operativa por registro.
     confidence = probabilities.max(axis=1)
     prediction_df = pd.DataFrame(
         {
@@ -1224,7 +1231,7 @@ def final_fit_and_predict(
     feature_columns: list[str],
     target: str,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
-    # Reentrena el mejor clasificador con todo train y genera predicciones de test.
+    # P2_ML.pdf 3.4/3.5 - Modelo optimizado para inferencia y probabilidades finales.
     if best.family == "ensemble":
         model = clone(build_ensemble_models()[best.name]).fit(x_full, y_full)
         probabilities, classes = predict_proba_from_sklearn(model, x_test)
@@ -1280,7 +1287,7 @@ def save_classification_outputs(
     batch_size: int,
     paths: OutputPaths,
 ) -> None:
-    # Guarda metricas, reportes, matrices de confusion, modelo final y predicciones.
+    # P2_ML.pdf 3.2-3.5 - Evidencias para el informe: metricas, figuras y predicciones.
     metrics_df = pd.DataFrame([candidate.metrics for candidate in candidates]).sort_values(
         by=["f1_macro", "accuracy"],
         ascending=False,
@@ -1361,7 +1368,7 @@ def save_classification_outputs(
 
 
 def main() -> None:
-    # Orquestador principal: ejecuta todas las etapas en orden.
+    # Orquestador principal segun el flujo pedido en P2_ML.pdf.
     args = parse_args()
     configure_plots()
     paths = prepare_output_paths(args.output_dir)
@@ -1388,15 +1395,15 @@ def main() -> None:
     scaler_for_analysis = StandardScaler()
     x_scaled = scaler_for_analysis.fit_transform(x)
 
-    # Bloque de reduccion dimensional: PCA vs t-SNE.
+    # P2_ML.pdf 3.2 - Bloque de reduccion dimensional: PCA vs t-SNE.
     if not args.skip_geometry:
         run_dimensionality_analysis(x_scaled, y, args.target, paths)
 
-    # Bloque de clustering: GMM vs DBSCAN.
+    # P2_ML.pdf 3.3 - Bloque de clustering: GMM vs DBSCAN.
     if not args.skip_clustering:
         run_clustering_analysis(x_scaled, paths)
 
-    # Bloque de clasificacion: ensambles y MLP.
+    # P2_ML.pdf 3.4 - Bloque de clasificacion: ensambles y MLP.
     candidates = evaluate_ensemble_models(x_train, x_valid, y_train, y_valid)
 
     if not args.skip_mlp:
