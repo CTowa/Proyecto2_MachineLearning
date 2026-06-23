@@ -32,6 +32,32 @@ Si se usa fish y se quiere activar el entorno manualmente, el comando correcto e
 source .venv/bin/activate.fish
 ```
 
+## Frontend en Streamlit
+
+Primero genera los resultados del pipeline:
+
+```bash
+.venv/bin/python main.py
+```
+
+Luego inicia la interfaz:
+
+```bash
+.venv/bin/python -m streamlit run app.py
+```
+
+La app abre un simulador de inferencia con escenarios precargados de `eco_acoustic_test.csv`.
+No reentrena modelos dentro de la interfaz; lee `outputs/test_predictions.csv` y aplica los umbrales de decision del proyecto.
+
+La interfaz incluye:
+
+- seleccion de registros por `recording_id`;
+- prediccion, especie real y confianza;
+- zona operativa: `confianza`, `incertidumbre` o `rechazo`;
+- grafico de probabilidades por especie;
+- grafico del vector `mel_0` a `mel_63`;
+- tablas de metricas y figuras generadas por el pipeline.
+
 ## Resultados generados
 
 Los resultados se guardan en `outputs/`:
