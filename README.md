@@ -27,15 +27,43 @@ En `main.py` y `app.py` tambien hay comentarios con referencias como `P2_ML.pdf 
 
 ## Instalacion
 
+### Windows con Git Bash
+
+Si ya tienes `.venv` activado y quieres recrearlo, primero sal del entorno. No ejecutes `python -m venv .venv` mientras `.venv` esta activo porque Windows puede bloquear `.venv/Scripts/python.exe`.
+
+```bash
+deactivate
+rm -rf .venv
+python -m venv .venv
+source .venv/Scripts/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+### Windows con PowerShell
+
+```powershell
+deactivate
+Remove-Item -Recurse -Force .venv
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
+```
+
+### Linux/macOS
+
 ```bash
 python -m venv .venv
-.venv/bin/python -m pip install -r requirements.txt
+source .venv/bin/activate
+python -m pip install --upgrade pip
+python -m pip install -r requirements.txt
 ```
 
 ## Ejecucion completa
 
 ```bash
-.venv/bin/python main.py
+python main.py
 ```
 
 Por defecto se predice `species_id`, que es la variable objetivo descrita en la documentacion del dataset.
@@ -45,7 +73,7 @@ Por defecto se predice `species_id`, que es la variable objetivo descrita en la 
 Si solo se desea validar el flujo general sin entrenar redes neuronales:
 
 ```bash
-.venv/bin/python main.py --skip-mlp
+python main.py --skip-mlp
 ```
 
 Si se usa fish y se quiere activar el entorno manualmente, el comando correcto es:
@@ -59,13 +87,13 @@ source .venv/bin/activate.fish
 Primero genera los resultados del pipeline:
 
 ```bash
-.venv/bin/python main.py
+python main.py
 ```
 
 Luego inicia la interfaz:
 
 ```bash
-.venv/bin/python -m streamlit run app.py
+python -m streamlit run app.py
 ```
 
 La app abre un simulador de inferencia con escenarios precargados de `eco_acoustic_test.csv`.
@@ -73,12 +101,14 @@ No reentrena modelos dentro de la interfaz; lee `outputs/test_predictions.csv` y
 
 La interfaz incluye:
 
+- resumen de cumplimiento frente a `P2_ML.pdf`;
 - seleccion de registros por `recording_id`;
 - prediccion, especie real y confianza;
 - zona operativa: `confianza`, `incertidumbre` o `rechazo`;
 - grafico de probabilidades por especie;
 - grafico del vector `mel_0` a `mel_63`;
-- tablas de metricas y figuras generadas por el pipeline.
+- tablas de metricas con explicacion de uso e interpretacion;
+- figuras ordenadas por etapa del pipeline: dataset, reduccion, clustering y clasificacion.
 
 ## Resultados generados
 
