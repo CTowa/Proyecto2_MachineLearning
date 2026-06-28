@@ -212,14 +212,6 @@ def configure_page() -> None:
         .context-box strong {
             color: #183c40;
         }
-        .status-ok {
-            color: #0f7b45;
-            font-weight: 700;
-        }
-        .status-pending {
-            color: #946200;
-            font-weight: 700;
-        }
         </style>
         """,
         unsafe_allow_html=True,
@@ -316,17 +308,6 @@ def selected_mel_table(test_row: pd.Series) -> pd.DataFrame:
             "value": [float(test_row[column]) for column in mel_columns],
         }
     )
-
-
-def metric_value(df: pd.DataFrame, column: str, default: str = "N/A") -> str:
-    if df.empty or column not in df.columns:
-        return default
-    value = df.iloc[0][column]
-    if pd.isna(value):
-        return default
-    if isinstance(value, float):
-        return f"{value:.4f}"
-    return str(value)
 
 
 def format_percentage(value: float | int | str) -> str:

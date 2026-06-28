@@ -25,6 +25,30 @@ Esta tabla conecta lo pedido en `P2_ML.pdf` con la parte del proyecto que lo imp
 
 En `main.py` y `app.py` tambien hay comentarios con referencias como `P2_ML.pdf 3.2` para ubicar rapidamente que parte del codigo responde a cada indicacion.
 
+## Cierre para el informe
+
+El codigo queda enfocado en PCA y t-SNE. No se incluye UMAP porque el proyecto ya contrasta un metodo lineal contra un metodo no lineal de reduccion dimensional, y asi se mantiene el alcance alineado con la implementacion documentada.
+
+Puntos que deben explicarse en el informe:
+
+- La variable objetivo principal es `species_id`, porque representa la especie a clasificar.
+- Las variables de entrada principales son solo `mel_0` a `mel_63`, es decir, `X in R64`.
+- `songtype_id` e `is_tp` se tratan como metadatos; no hacen parte del experimento principal para no alejarse del espacio Mel puro.
+- PCA se usa como reduccion lineal e interpretable por varianza explicada.
+- t-SNE se usa como visualizacion no lineal de vecindarios; no reporta varianza explicada.
+- GMM y DBSCAN se usan para observar estructura no supervisada antes de la clasificacion.
+- El MLP se compara contra ensambles usando `f1_macro`, porque las clases no estan perfectamente balanceadas.
+- Las zonas `confianza`, `incertidumbre` y `rechazo` convierten probabilidades en una politica operativa.
+
+Puntos que no deben venderse como resultado principal:
+
+- `--include-metadata` es solo una opcion exploratoria; los resultados principales deben usar `mel_0` a `mel_63`.
+- Streamlit es una capa de demostracion y explicacion, no un nuevo entrenamiento.
+- Los ensambles son benchmark contra el MLP; no reemplazan la explicacion de la red neuronal.
+- El modelo no debe presentarse como sistema productivo robusto: el rendimiento en test es moderado y debe reportarse con sus limitaciones.
+
+Con esto, el codigo queda listo para construir el informe. Lo unico externo al codigo que falta completar es el `Contribution statement` o tabla de coevaluacion del equipo.
+
 ## Instalacion
 
 ### Windows con Git Bash
