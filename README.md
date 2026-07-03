@@ -9,21 +9,21 @@ Esta tabla conecta lo pedido en `P2_ML.pdf` con la parte del proyecto que lo imp
 
 | Seccion del PDF | Que pide | Donde se implementa | Salida util |
 | --- | --- | --- | --- |
-| 3.1 Resumen e introduccion al espacio vectorial | Definir el problema, cargar CSV y trabajar con `X in R64` | `main.py`: `load_data`, `get_mel_columns`, `get_feature_columns`, `save_dataset_summary` | `outputs/tables/dataset_summary.csv`, `outputs/figures/target_distribution.png` |
-| 3.1 Arquitectura del pipeline | Mostrar flujo desde CSV hasta inferencia/Streamlit | `main.py`: `main`; `app.py`: interfaz de inferencia | README + app Streamlit |
-| 3.2 Reduccion dimensional | Comparar PCA vs metodo no lineal | `main.py`: `run_dimensionality_analysis` | `outputs/tables/dimensionality_metrics.csv`, `outputs/figures/pca_projection.png`, `outputs/figures/tsne_projection.png` |
-| 3.2 Reporte cuantitativo | Medir tiempos y preservacion geometrica | `main.py`: columnas `seconds`, `explained_variance_ratio`, `trustworthiness_10nn` | `outputs/tables/dimensionality_metrics.csv` |
-| 3.3 Clustering | Comparar dos metodos no supervisados distintos | `main.py`: `run_clustering_analysis` con GMM y DBSCAN | `outputs/tables/clustering_metrics.csv`, `outputs/figures/gmm_clusters.png`, `outputs/figures/dbscan_clusters.png` |
-| 3.3 Validacion interna | Usar metricas como Silhouette | `main.py`: `score_clustering` | `outputs/tables/clustering_metrics.csv` |
-| 3.4 MLP | Definir topologia, loss y regularizacion | `main.py`: `NumpyMLPClassifier` | `outputs/tables/mlp_history_*.csv`, `outputs/figures/mlp_loss_curves.png` |
-| 3.4 Dropout y BatchNorm | Comparar posicion de Dropout y Batch Normalization | `main.py`: variantes `plain`, `dropout_then_batchnorm`, `batchnorm_then_dropout` | `outputs/figures/mlp_loss_curves.png`, `outputs/figures/mlp_f1_curves.png` |
-| 3.4 MLP vs ensambles | Comparar con F1 y matrices de confusion | `main.py`: `evaluate_mlp_models`, `evaluate_ensemble_models`, `save_confusion_matrix` | `outputs/tables/classification_metrics.csv`, `outputs/figures/best_validation_confusion_matrix.png` |
-| 3.5 MLOps y negocio | Medir costo computacional e inferencia | `main.py`: `fit_seconds`, `predict_ms_per_sample` | `outputs/tables/classification_metrics.csv` |
-| 3.5 Umbrales operativos | Aplicar confianza, incertidumbre y rechazo | `main.py`: `confidence_zone`, `build_prediction_table`; `app.py`: `decision_box` | `outputs/test_predictions.csv`, Streamlit |
+| 3.1 Resumen e introduccion al espacio vectorial | Definir el problema, cargar CSV y trabajar con `X in R64` | `main_adjusted.py`: `load_data`, `get_mel_columns`, `get_feature_columns`, `save_dataset_summary` | `outputs/tables/dataset_summary.csv`, `outputs/figures/target_distribution.png` |
+| 3.1 Arquitectura del pipeline | Mostrar flujo desde CSV hasta inferencia/Streamlit | `main_adjusted.py`: `main`; `app.py`: interfaz de inferencia | README + app Streamlit |
+| 3.2 Reduccion dimensional | Comparar PCA vs metodo no lineal | `main_adjusted.py`: `run_dimensionality_analysis` | `outputs/tables/dimensionality_metrics.csv`, `outputs/figures/pca_projection.png`, `outputs/figures/tsne_projection.png` |
+| 3.2 Reporte cuantitativo | Medir tiempos y preservacion geometrica | `main_adjusted.py`: columnas `seconds`, `explained_variance_ratio`, `trustworthiness_10nn` | `outputs/tables/dimensionality_metrics.csv` |
+| 3.3 Clustering | Comparar dos metodos no supervisados distintos | `main_adjusted.py`: `run_clustering_analysis` con GMM y DBSCAN | `outputs/tables/clustering_metrics.csv`, `outputs/figures/gmm_clusters.png`, `outputs/figures/dbscan_clusters.png` |
+| 3.3 Validacion interna | Usar metricas como Silhouette y justificar parametros | `main_adjusted.py`: `score_clustering`, curva BIC y curva k-distancia | `outputs/tables/clustering_metrics.csv`, `outputs/figures/gmm_bic_curve.png`, `outputs/figures/dbscan_k_distance.png` |
+| 3.4 MLP | Definir topologia, loss y regularizacion | `main_adjusted.py`: `NumpyMLPClassifier` | `outputs/tables/mlp_history_*.csv`, `outputs/figures/mlp_loss_curves.png` |
+| 3.4 Dropout y BatchNorm | Comparar posicion de Dropout y Batch Normalization | `main_adjusted.py`: variantes `plain`, `dropout_then_batchnorm`, `batchnorm_then_dropout` | `outputs/figures/mlp_loss_curves.png`, `outputs/figures/mlp_f1_curves.png` |
+| 3.4 MLP vs ensambles | Comparar con F1 y matrices de confusion | `main_adjusted.py`: `evaluate_mlp_models`, `evaluate_ensemble_models`, `save_confusion_matrix` | `outputs/tables/classification_metrics.csv`, matrices normalizadas y absolutas |
+| 3.5 MLOps y negocio | Medir costo computacional e inferencia | `main_adjusted.py`: `fit_seconds`, `predict_ms_per_sample`, metadata de corrida | `outputs/tables/classification_metrics.csv`, `outputs/pipeline_run_metadata.json` |
+| 3.5 Umbrales operativos | Aplicar confianza, incertidumbre y rechazo | `main_adjusted.py`: `confidence_zone`, `build_prediction_table`; `app.py`: `decision_box` | `outputs/test_predictions.csv`, Streamlit |
 | Bonus Streamlit | Interfaz informativa con escenarios precargados | `app.py` | `http://localhost:8501` |
 | 3.6 Contribution statement | Tabla de coevaluacion del equipo | No corresponde al codigo; debe agregarse en el informe LaTeX | Tabla final del informe |
 
-En `main.py` y `app.py` tambien hay comentarios con referencias como `P2_ML.pdf 3.2` para ubicar rapidamente que parte del codigo responde a cada indicacion.
+En `main_adjusted.py` y `app.py` tambien hay comentarios con referencias como `P2_ML.pdf 3.2` para ubicar rapidamente que parte del codigo responde a cada indicacion.
 
 ## Cierre para el informe
 
@@ -87,7 +87,7 @@ python -m pip install -r requirements.txt
 ## Ejecucion completa
 
 ```bash
-python main.py
+python main_adjusted.py
 ```
 
 Por defecto se predice `species_id`, que es la variable objetivo descrita en la documentacion del dataset.
@@ -97,7 +97,7 @@ Por defecto se predice `species_id`, que es la variable objetivo descrita en la 
 Si solo se desea validar el flujo general sin entrenar redes neuronales:
 
 ```bash
-python main.py --skip-mlp
+python main_adjusted.py --skip-mlp
 ```
 
 Si se usa fish y se quiere activar el entorno manualmente, el comando correcto es:
@@ -111,7 +111,7 @@ source .venv/bin/activate.fish
 Primero genera los resultados del pipeline:
 
 ```bash
-python main.py
+python main_adjusted.py
 ```
 
 Luego inicia la interfaz:
@@ -121,7 +121,7 @@ python -m streamlit run app.py
 ```
 
 La app abre un simulador de inferencia con escenarios precargados de `eco_acoustic_test.csv`.
-No reentrena modelos dentro de la interfaz; lee `outputs/test_predictions.csv` y aplica los umbrales de decision del proyecto.
+No reentrena modelos dentro de la interfaz; exige `outputs/pipeline_run_metadata.json` generado por `main_adjusted.py`, lee `outputs/test_predictions.csv` y aplica los umbrales de decision del proyecto.
 
 La interfaz incluye:
 
@@ -133,6 +133,7 @@ La interfaz incluye:
 - grafico del vector `mel_0` a `mel_63`;
 - tablas de metricas con explicacion de uso e interpretacion;
 - figuras ordenadas por etapa del pipeline: dataset, reduccion, clustering y clasificacion.
+- metadata de la corrida ajustada, incluyendo script productor, target, features, mejor modelo y umbrales.
 
 ## Resultados generados
 
@@ -143,6 +144,7 @@ Los resultados se guardan en `outputs/`:
 - `outputs/tables/classification_metrics.csv`: comparacion de MLP y ensambles.
 - `outputs/figures/`: graficos para el informe.
 - `outputs/test_predictions.csv`: predicciones con probabilidad y zona de decision.
+- `outputs/pipeline_run_metadata.json`: metadata que permite a Streamlit verificar que los resultados vienen de `main_adjusted.py`.
 - `outputs/models/`: mejor modelo entrenado y metadatos.
 
 ## Como interpretar la salida
@@ -207,11 +209,16 @@ Eso esta bien: significa que la red con Dropout antes de Batch Normalization tuv
 
 - `outputs/tables/classification_metrics.csv`: tabla para comparar MLP vs ensambles.
 - `outputs/figures/best_validation_confusion_matrix.png`: matriz de confusion del mejor modelo.
+- `outputs/figures/best_validation_confusion_matrix_normalized.png`: matriz de validacion normalizada por clase.
+- `outputs/figures/test_confusion_matrix_normalized.png`: matriz final normalizada por clase.
+- `outputs/figures/gmm_bic_curve.png`: curva BIC para justificar componentes en GMM.
+- `outputs/figures/dbscan_k_distance.png`: curva k-distancia para justificar eps en DBSCAN.
 - `outputs/figures/mlp_loss_curves.png`: curvas de perdida para analizar regularizacion.
 - `outputs/figures/mlp_f1_curves.png`: evolucion del F1 en MLP.
 - `outputs/tables/dimensionality_metrics.csv`: tabla PCA vs t-SNE.
 - `outputs/tables/clustering_metrics.csv`: tabla GMM vs DBSCAN.
 - `outputs/test_predictions.csv`: predicciones finales y zonas de confianza.
+- `outputs/pipeline_run_metadata.json`: trazabilidad de la corrida consumida por `app.py`.
 
 ## Umbrales de decision
 

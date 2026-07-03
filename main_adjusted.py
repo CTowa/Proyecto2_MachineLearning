@@ -1277,6 +1277,74 @@ def save_policy_summary(prediction_df: pd.DataFrame, paths: OutputPaths, filenam
     summary.to_csv(paths.tables / filename, index=False)
 
 
+def json_safe(value: Any) -> Any:
+    if isinstance(value, np.generic):
+        return value.item()
+    if isinstance(value, np.ndarray):
+        return value.tolist()
+    if isinstance(value, Path):
+        return str(value)
+    if isinstance(value, dict):
+        return {str(key): json_safe(item) for key, item in value.items()}
+    if isinstance(value, list | tuple):
+        return [json_safe(item) for item in value]
+    return value
+
+
+def relative_existing_files(paths: OutputPaths) -> list[str]:
+    files = [
+        path.relative_to(paths.root).as_posix()
+        for path in paths.root.rglob("*")
+        if path.is_file()
+    ]
+    return sorted(files)
+
+
+def save_pipeline_metadata(
+    args: argparse.Namespace,
+    paths: OutputPaths,
+    feature_columns: list[str],
+    best: ClassifierCandidate,
+) -> None:
+    # The Streamlit app reads this file to verify that outputs came from main_adjusted.py.
+    metadata = {
+        "producer_script": "main_adjusted.py",
+        "pipeline_version": "adjusted",
+        "generated_at_local": time.strftime("%Y-%m-%d %H:%M:%S %z"),
+        "target": args.target,
+        "train_path": args.train,
+        "test_path": args.test,
+        "output_dir": str(paths.root),
+        "test_size": args.test_size,
+        "epochs": args.epochs,
+        "batch_size": args.batch_size,
+        "include_metadata": args.include_metadata,
+        "skip_geometry": args.skip_geometry,
+        "skip_clustering": args.skip_clustering,
+        "skip_mlp": args.skip_mlp,
+        "feature_count": len(feature_columns),
+        "feature_columns": feature_columns,
+        "confidence_threshold": CONFIDENCE_THRESHOLD,
+        "review_threshold": REVIEW_THRESHOLD,
+        "best_classifier": {
+            "family": best.family,
+            "model": best.name,
+            "metrics": best.metrics,
+        },
+        "adjusted_outputs": [
+            "figures/dbscan_k_distance.png",
+            "figures/gmm_bic_curve.png",
+            "figures/best_validation_confusion_matrix_normalized.png",
+            "figures/test_confusion_matrix_normalized.png",
+        ],
+        "generated_files": relative_existing_files(paths),
+    }
+    (paths.root / "pipeline_run_metadata.json").write_text(
+        json.dumps(json_safe(metadata), indent=2),
+        encoding="utf-8",
+    )
+
+
 def final_fit_and_predict(
     best: ClassifierCandidate,
     x_full: pd.DataFrame,
@@ -1491,9 +1559,11 @@ def main() -> None:
         batch_size=args.batch_size,
         paths=paths,
     )
+    save_pipeline_metadata(args, paths, feature_columns, best)
 
     print("\n=== Archivos principales generados ===")
     for output_path in [
+        paths.root / "pipeline_run_metadata.json",
         paths.tables / "classification_metrics.csv",
         paths.tables / "dimensionality_metrics.csv",
         paths.tables / "clustering_metrics.csv",

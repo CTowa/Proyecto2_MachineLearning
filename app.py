@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import json
 from pathlib import Path
+from typing import Any
 
 import pandas as pd
 import streamlit as st
@@ -15,6 +17,8 @@ import streamlit as st
 ROOT = Path(__file__).parent
 DEFAULT_OUTPUT_DIR = ROOT / "outputs"
 TEST_PATH = ROOT / "eco_acoustic_test.csv"
+PIPELINE_SCRIPT = "main_adjusted.py"
+PIPELINE_COMMAND = f"python {PIPELINE_SCRIPT}"
 
 SPECIES_NAMES = {
     10: "Leptodactylus discodactylus",
@@ -48,7 +52,7 @@ PROJECT_CHECKLIST = [
         "section": "3.1",
         "item": "Carga de datos y espacio vectorial X en R64",
         "status": "Implementado",
-        "evidence": "main.py valida y usa mel_0 a mel_63 como variables de entrada.",
+        "evidence": "main_adjusted.py valida y usa mel_0 a mel_63 como variables de entrada.",
     },
     {
         "section": "3.2",
@@ -60,13 +64,13 @@ PROJECT_CHECKLIST = [
         "section": "3.3",
         "item": "Clustering con validacion interna",
         "status": "Implementado",
-        "evidence": "GMM y DBSCAN se comparan con Silhouette, Calinski-Harabasz y Davies-Bouldin.",
+        "evidence": "GMM y DBSCAN se comparan con metricas internas, curva BIC y curva k-distancia.",
     },
     {
         "section": "3.4",
         "item": "MLP, regularizacion y comparacion contra ensambles",
         "status": "Implementado",
-        "evidence": "El MLP en NumPy compara variantes con Dropout y BatchNorm, junto a Random Forest y HGB.",
+        "evidence": "El MLP compara variantes con train/valid loss, F1 macro y matrices normalizadas.",
     },
     {
         "section": "3.5",
@@ -107,6 +111,18 @@ FIGURE_GROUPS = {
     ],
     "Clustering no supervisado": [
         (
+            "Curva BIC GMM",
+            "gmm_bic_curve.png",
+            "Justifica el numero de componentes probado en el modelo probabilistico.",
+            "Un BIC menor sugiere mejor balance entre ajuste y complejidad.",
+        ),
+        (
+            "Curva k-distancia DBSCAN",
+            "dbscan_k_distance.png",
+            "Muestra la escala de distancias usada para proponer valores de eps.",
+            "El cambio de pendiente ayuda a explicar por que eps no se eligio arbitrariamente.",
+        ),
+        (
             "GMM clusters",
             "gmm_clusters.png",
             "Muestra la mejor segmentacion probabilistica segun Silhouette.",
@@ -139,10 +155,22 @@ FIGURE_GROUPS = {
             "Las celdas fuera de la diagonal muestran especies que el modelo confunde.",
         ),
         (
+            "Matriz de validacion normalizada",
+            "best_validation_confusion_matrix_normalized.png",
+            "Compara errores por clase sin que domine la cantidad de muestras.",
+            "Cada fila suma 1; la diagonal indica el recall por especie.",
+        ),
+        (
             "Matriz de confusion en test",
             "test_confusion_matrix.png",
             "Resume errores finales sobre datos no usados para entrenar.",
             "Una diagonal dominante indica buena generalizacion del modelo final.",
+        ),
+        (
+            "Matriz de test normalizada",
+            "test_confusion_matrix_normalized.png",
+            "Evalua el desempeno final clase por clase en escala relativa.",
+            "Es la vista mas justa cuando las clases no tienen el mismo soporte.",
         ),
     ],
 }
@@ -223,9 +251,15 @@ def load_csv(path: Path) -> pd.DataFrame:
     return pd.read_csv(path)
 
 
+@st.cache_data
+def load_json(path: Path) -> dict[str, Any]:
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
 def get_paths(output_dir: Path) -> dict[str, Path]:
-    # P2_ML.pdf 3.1 - La interfaz consume las salidas generadas por el pipeline.
+    # P2_ML.pdf 3.1 - La interfaz consume las salidas generadas por main_adjusted.py.
     return {
+        "run_metadata": output_dir / "pipeline_run_metadata.json",
         "predictions": output_dir / "test_predictions.csv",
         "dataset_summary": output_dir / "tables" / "dataset_summary.csv",
         "target_distribution": output_dir / "tables" / "target_distribution.csv",
@@ -244,8 +278,8 @@ def render_hero() -> None:
         <div class="app-hero">
             <h1>Dashboard eco-acustico</h1>
             <p>
-                Lectura ordenada del pipeline: datos, exploracion, clustering,
-                clasificacion, politica de decision e inferencia sobre registros de prueba.
+                Lectura de las salidas generadas por main_adjusted.py: datos,
+                exploracion, clustering, clasificacion, politica de decision e inferencia.
             </p>
         </div>
         """,
@@ -266,16 +300,34 @@ def render_context(purpose: str, interpretation: str) -> None:
 
 
 def require_outputs(paths: dict[str, Path]) -> bool:
-    if paths["predictions"].exists():
-        return True
+    missing = [
+        label
+        for label, path in {
+            "metadata de main_adjusted.py": paths["run_metadata"],
+            "predicciones": paths["predictions"],
+        }.items()
+        if not path.exists()
+    ]
+    if missing:
+        st.warning("Faltan salidas generadas por `main_adjusted.py`: " + ", ".join(missing) + ".")
+        render_context(
+            "La interfaz consume archivos ya calculados por main_adjusted.py para evitar reentrenar desde Streamlit.",
+            "Ejecuta el pipeline ajustado y vuelve a abrir la app; entonces apareceran metricas, figuras y escenarios.",
+        )
+        st.code(PIPELINE_COMMAND, language="bash")
+        return False
 
-    st.warning("Todavia no hay predicciones generadas en `outputs/test_predictions.csv`.")
-    render_context(
-        "La interfaz consume archivos ya calculados para evitar reentrenar modelos desde Streamlit.",
-        "Ejecuta el pipeline y vuelve a abrir la app; entonces apareceran metricas, figuras y escenarios.",
-    )
-    st.code("python main.py", language="bash")
-    return False
+    metadata = load_json(paths["run_metadata"])
+    producer = metadata.get("producer_script")
+    if producer != PIPELINE_SCRIPT:
+        st.warning(
+            f"La carpeta seleccionada fue generada por `{producer}`. "
+            f"Para esta app se esperan outputs de `{PIPELINE_SCRIPT}`."
+        )
+        st.code(PIPELINE_COMMAND, language="bash")
+        return False
+
+    return True
 
 
 def probability_columns(prediction_df: pd.DataFrame) -> list[str]:
@@ -317,6 +369,13 @@ def format_percentage(value: float | int | str) -> str:
         return str(value)
 
 
+def format_decimal(value: Any, digits: int = 4) -> str:
+    try:
+        return f"{float(value):.{digits}f}"
+    except (TypeError, ValueError):
+        return "N/A"
+
+
 def render_dataframe(df: pd.DataFrame, height: int | None = None) -> None:
     options = {
         "use_container_width": True,
@@ -344,6 +403,53 @@ def decision_box(zone: str, confidence: float) -> None:
     )
 
 
+def render_pipeline_run(paths: dict[str, Path], metadata: dict[str, Any]) -> None:
+    st.markdown("#### Corrida cargada")
+    render_context(
+        "Verifica que la interfaz esta leyendo resultados producidos por main_adjusted.py.",
+        "Si el script, target o mejor modelo no coinciden con tu ultima ejecucion, vuelve a correr el pipeline ajustado.",
+    )
+
+    best_classifier = metadata.get("best_classifier", {})
+    best_metrics = best_classifier.get("metrics", {})
+    best_name = "/".join(
+        str(value)
+        for value in [best_classifier.get("family"), best_classifier.get("model")]
+        if value
+    )
+
+    cols = st.columns(4)
+    cols[0].metric("Script", str(metadata.get("producer_script", "N/A")))
+    cols[1].metric("Target", str(metadata.get("target", "N/A")))
+    cols[2].metric("Features", str(metadata.get("feature_count", "N/A")))
+    cols[3].metric("F1 macro validacion", format_decimal(best_metrics.get("f1_macro")))
+
+    run_rows = [
+        ("Mejor clasificador", best_name or "N/A"),
+        ("Accuracy validacion", format_decimal(best_metrics.get("accuracy"))),
+        ("F1 weighted validacion", format_decimal(best_metrics.get("f1_weighted"))),
+        ("Inferencia ms/muestra", format_decimal(best_metrics.get("predict_ms_per_sample"), digits=3)),
+        ("Umbral confianza", format_percentage(metadata.get("confidence_threshold", ""))),
+        ("Umbral revision", format_percentage(metadata.get("review_threshold", ""))),
+        ("Generado", str(metadata.get("generated_at_local", "N/A"))),
+    ]
+    render_dataframe(pd.DataFrame(run_rows, columns=["campo", "valor"]))
+
+    adjusted_outputs = metadata.get("adjusted_outputs", [])
+    if adjusted_outputs:
+        output_status = pd.DataFrame(
+            [
+                {
+                    "artifact": artifact,
+                    "exists": (paths["run_metadata"].parent / artifact).exists(),
+                }
+                for artifact in adjusted_outputs
+            ]
+        )
+        st.markdown("#### Evidencia nueva del adjusted")
+        render_dataframe(output_status)
+
+
 def render_sidebar(prediction_df: pd.DataFrame) -> pd.DataFrame:
     # P2_ML.pdf - Bonus Streamlit: escenarios precargados para simular inferencia.
     st.sidebar.header("Escenarios")
@@ -366,12 +472,19 @@ def render_sidebar(prediction_df: pd.DataFrame) -> pd.DataFrame:
     return filtered_df
 
 
-def render_project_overview(paths: dict[str, Path], prediction_df: pd.DataFrame | None = None) -> None:
+def render_project_overview(
+    paths: dict[str, Path],
+    prediction_df: pd.DataFrame | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> None:
     st.subheader("Estado frente al PDF")
     render_context(
-        "Resume que partes del enunciado ya estan cubiertas por el codigo y que queda para el informe.",
-        "El pipeline esta cubierto; lo pendiente es agregar la tabla de contribuciones del equipo en el documento escrito.",
+        "Resume que partes del enunciado cubre main_adjusted.py y que queda para el informe.",
+        "La app lee metadata, tablas y figuras ya generadas; lo pendiente externo es la tabla de contribuciones del equipo.",
     )
+
+    if metadata is not None:
+        render_pipeline_run(paths, metadata)
 
     checklist_df = pd.DataFrame(PROJECT_CHECKLIST)
     render_dataframe(checklist_df)
@@ -388,6 +501,7 @@ def render_project_overview(paths: dict[str, Path], prediction_df: pd.DataFrame 
         label
         for label, path in {
             "resumen del dataset": paths["dataset_summary"],
+            "metadata de corrida": paths["run_metadata"],
             "metricas de clasificacion": paths["classification_metrics"],
             "metricas de reduccion": paths["dimensionality_metrics"],
             "metricas de clustering": paths["clustering_metrics"],
@@ -540,8 +654,8 @@ def render_metrics_tab(paths: dict[str, Path]) -> None:
     if paths["clustering_metrics"].exists():
         st.markdown("#### GMM vs DBSCAN")
         render_context(
-            "Evalua si hay estructura no supervisada antes de usar etiquetas.",
-            "Silhouette y Calinski-Harabasz altos son mejores; Davies-Bouldin bajo es mejor.",
+            "Evalua estructura no supervisada y complementa la seleccion con BIC y k-distancia.",
+            "Silhouette y Calinski-Harabasz altos son mejores; Davies-Bouldin y BIC bajos son mejores.",
         )
         clustering_df = load_csv(paths["clustering_metrics"])
         render_dataframe(clustering_df)
@@ -561,7 +675,7 @@ def render_figures_tab(paths: dict[str, Path]) -> None:
         for _, filename, _, _ in group
     )
     if not has_any_figure:
-        st.info("Aun no hay figuras generadas. Ejecuta `.venv/bin/python main.py`.")
+        st.info(f"Aun no hay figuras generadas. Ejecuta `{PIPELINE_COMMAND}`.")
         return
 
     for group_name, figures in FIGURE_GROUPS.items():
@@ -642,11 +756,30 @@ def render_raw_reports(paths: dict[str, Path]) -> None:
             st.text(path.read_text())
 
 
-def render_data_tab(prediction_df: pd.DataFrame, test_df: pd.DataFrame, paths: dict[str, Path]) -> None:
+def render_metadata_table(metadata: dict[str, Any]) -> None:
+    st.markdown("#### Metadata de main_adjusted.py")
+    render_context(
+        "Audita la configuracion usada para crear las tablas, modelos, figuras y predicciones que muestra la app.",
+        "Debe indicar producer_script = main_adjusted.py; si no coincide, la app no usa esos outputs.",
+    )
+    rows = [
+        {"campo": key, "valor": json.dumps(value, ensure_ascii=False)}
+        for key, value in metadata.items()
+        if key not in {"feature_columns", "best_classifier"}
+    ]
+    render_dataframe(pd.DataFrame(rows), height=430)
+
+
+def render_data_tab(
+    prediction_df: pd.DataFrame,
+    test_df: pd.DataFrame,
+    paths: dict[str, Path],
+    metadata: dict[str, Any],
+) -> None:
     st.subheader("Datos usados por la interfaz")
     table_choice = st.radio(
         "Tabla a revisar",
-        ["Predicciones", "Dataset de prueba", "Reportes"],
+        ["Predicciones", "Dataset de prueba", "Reportes", "Metadata"],
         horizontal=True,
     )
 
@@ -654,21 +787,23 @@ def render_data_tab(prediction_df: pd.DataFrame, test_df: pd.DataFrame, paths: d
         render_predictions_table(prediction_df)
     elif table_choice == "Dataset de prueba":
         render_test_table(test_df)
-    else:
+    elif table_choice == "Reportes":
         render_raw_reports(paths)
+    else:
+        render_metadata_table(metadata)
 
 
 def render_missing_outputs_page(paths: dict[str, Path]) -> None:
     render_project_overview(paths)
     st.subheader("Como generar la evidencia")
     st.write(
-        "La app ya esta lista para mostrar resultados, pero necesita que el pipeline cree la carpeta `outputs`."
+        "La app ya esta lista para mostrar resultados, pero necesita que main_adjusted.py cree la carpeta `outputs`."
     )
-    st.code("python main.py", language="bash")
+    st.code(PIPELINE_COMMAND, language="bash")
     st.write(
         "Para una validacion mas rapida puedes omitir el MLP, aunque el informe completo debe incluirlo."
     )
-    st.code("python main.py --skip-mlp", language="bash")
+    st.code(f"{PIPELINE_COMMAND} --skip-mlp", language="bash")
 
 
 def main() -> None:
@@ -684,6 +819,7 @@ def main() -> None:
         render_missing_outputs_page(paths)
         return
 
+    metadata = load_json(paths["run_metadata"])
     prediction_df = load_csv(paths["predictions"])
     test_df = load_csv(TEST_PATH)
 
@@ -692,7 +828,7 @@ def main() -> None:
     )
 
     with overview_tab:
-        render_project_overview(paths, prediction_df)
+        render_project_overview(paths, prediction_df, metadata)
 
     with inference_tab:
         render_inference_tab(prediction_df, test_df)
@@ -704,7 +840,7 @@ def main() -> None:
         render_figures_tab(paths)
 
     with data_tab:
-        render_data_tab(prediction_df, test_df, paths)
+        render_data_tab(prediction_df, test_df, paths, metadata)
 
 
 if __name__ == "__main__":
