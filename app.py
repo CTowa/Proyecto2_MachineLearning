@@ -35,7 +35,6 @@ ZONE_LABELS = {
 }
 
 ZONE_MESSAGES = {
-    # P2_ML.pdf 3.5 - Tres estados operativos segun la probabilidad predictiva.
     "confianza": "Clasificacion automatica: la probabilidad supera el umbral operativo.",
     "incertidumbre": "Clasificacion asistida: el registro debe revisarse por un experto.",
     "rechazo": "Descarte automatico: la confianza es baja y se mitiga el riesgo de falsos positivos.",
@@ -91,86 +90,73 @@ FIGURE_GROUPS = {
         (
             "Distribucion de clases",
             "target_distribution.png",
-            "Verifica el balance de especies antes de entrenar.",
-            "Si una especie tiene menos muestras, F1 macro es mas representativo que accuracy.",
+            "Verifica el balance de especies antes de entrenar. Cuando una especie tiene menos muestras, la metrica F1 macro es mas representativa que el accuracy global.",
         ),
     ],
     "Reduccion dimensional": [
         (
             "PCA 2D",
             "pca_projection.png",
-            "Resume el espacio Mel en dos componentes lineales.",
-            "Sirve para revisar separacion global y varianza explicada.",
+            "Resume el espacio Mel en dos componentes lineales para revisar separacion global y cuanta varianza explica cada componente.",
         ),
         (
             "t-SNE 2D",
             "tsne_projection.png",
-            "Visualiza vecindarios no lineales del espacio Mel.",
-            "Sirve para inspeccionar grupos locales, no para medir varianza.",
+            "Visualiza vecindarios no lineales del espacio Mel. Sirve para inspeccionar grupos locales, aunque no mide varianza explicada.",
         ),
     ],
     "Clustering no supervisado": [
         (
             "Curva BIC GMM",
             "gmm_bic_curve.png",
-            "Justifica el numero de componentes probado en el modelo probabilistico.",
-            "Un BIC menor sugiere mejor balance entre ajuste y complejidad.",
+            "Justifica cuantos componentes se probaron en el modelo probabilistico GMM. Un BIC menor sugiere mejor balance entre ajuste y complejidad.",
         ),
         (
             "Curva k-distancia DBSCAN",
             "dbscan_k_distance.png",
-            "Muestra la escala de distancias usada para proponer valores de eps.",
-            "El cambio de pendiente ayuda a explicar por que eps no se eligio arbitrariamente.",
+            "Muestra la escala de distancias usada para proponer valores de eps. El cambio de pendiente revela por que eps no se eligio arbitrariamente.",
         ),
         (
             "GMM clusters",
             "gmm_clusters.png",
-            "Muestra la mejor segmentacion probabilistica segun Silhouette.",
-            "Clusters compactos y separados sugieren estructura acustica recuperable.",
+            "Muestra la mejor segmentacion probabilistica segun el coeficiente de Silhouette. Clusters compactos y separados indican estructura acustica recuperable.",
         ),
         (
             "DBSCAN clusters",
             "dbscan_clusters.png",
-            "Muestra agrupaciones por densidad y posibles registros de ruido.",
-            "Mucho ruido indica que la densidad no separa bien todas las especies.",
+            "Muestra agrupaciones por densidad y posibles registros de ruido. Cuando hay mucho ruido, la densidad no separa bien todas las especies.",
         ),
     ],
     "Clasificacion supervisada": [
         (
             "Curvas de perdida MLP",
             "mlp_loss_curves.png",
-            "Compara estabilidad de entrenamiento entre variantes de MLP.",
-            "Una curva que baja y se estabiliza sugiere aprendizaje sin oscilacion fuerte.",
+            "Compara la estabilidad del entrenamiento entre variantes de MLP. Una curva que desciende y se estabiliza indica aprendizaje sin oscilaciones fuertes.",
         ),
         (
             "F1 macro MLP",
             "mlp_f1_curves.png",
-            "Evalua en que epoca y variante mejora el rendimiento por clase.",
-            "La variante con mayor F1 macro valida mejor el balance entre especies.",
+            "Evalua en que epoca y con que variante mejora el rendimiento promedio por clase. La variante con mayor F1 macro balancea mejor todas las especies.",
         ),
         (
             "Matriz de confusion en validacion",
             "best_validation_confusion_matrix.png",
-            "Identifica errores por especie en el conjunto de validacion.",
-            "Las celdas fuera de la diagonal muestran especies que el modelo confunde.",
+            "Identifica los errores por especie dentro del conjunto de validacion. Las celdas fuera de la diagonal revelan que especies el modelo confunde entre si.",
         ),
         (
             "Matriz de validacion normalizada",
             "best_validation_confusion_matrix_normalized.png",
-            "Compara errores por clase sin que domine la cantidad de muestras.",
-            "Cada fila suma 1; la diagonal indica el recall por especie.",
+            "Compara errores por clase sin que domine la cantidad de muestras. Cada fila suma 1 y la diagonal muestra el recall por especie.",
         ),
         (
             "Matriz de confusion en test",
             "test_confusion_matrix.png",
-            "Resume errores finales sobre datos no usados para entrenar.",
-            "Una diagonal dominante indica buena generalizacion del modelo final.",
+            "Resume los errores finales sobre datos que el modelo nunca vio durante el entrenamiento. Una diagonal dominante indica buena generalizacion.",
         ),
         (
             "Matriz de test normalizada",
             "test_confusion_matrix_normalized.png",
-            "Evalua el desempeno final clase por clase en escala relativa.",
-            "Es la vista mas justa cuando las clases no tienen el mismo soporte.",
+            "Evalua el desempeno final clase por clase en escala relativa. Es la vista mas justa cuando las clases no tienen el mismo numero de muestras.",
         ),
     ],
 }
@@ -224,21 +210,20 @@ def configure_page() -> None:
             font-weight: 600;
             margin: 1rem 0;
         }
-        .small-note {
-            color: #555;
-            font-size: 0.92rem;
+        .stTabs [data-baseweb="tab-list"] {
+            gap: 0.5rem;
         }
-        .context-box {
-            border-left: 4px solid #2f6f73;
-            background: #f6faf9;
-            border-radius: 6px;
-            color: #183c40;
-            padding: 0.75rem 0.9rem;
-            margin: 0.4rem 0 0.8rem 0;
-            line-height: 1.45;
+        .stTabs [data-baseweb="tab"] {
+            padding: 0.5rem 1rem;
+            font-weight: 500;
         }
-        .context-box strong {
-            color: #183c40;
+        .section-explanation {
+            color: #40514e;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 1rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #e5e9e8;
         }
         </style>
         """,
@@ -257,7 +242,6 @@ def load_json(path: Path) -> dict[str, Any]:
 
 
 def get_paths(output_dir: Path) -> dict[str, Path]:
-    # P2_ML.pdf 3.1 - La interfaz consume las salidas generadas por main_adjusted.py.
     return {
         "run_metadata": output_dir / "pipeline_run_metadata.json",
         "predictions": output_dir / "test_predictions.csv",
@@ -268,6 +252,8 @@ def get_paths(output_dir: Path) -> dict[str, Path]:
         "clustering_metrics": output_dir / "tables" / "clustering_metrics.csv",
         "test_metrics": output_dir / "tables" / "test_metrics.csv",
         "test_policy_summary": output_dir / "tables" / "test_policy_summary.csv",
+        "best_params": output_dir / "tables" / "best_params.json",
+        "calibrated_thresholds": output_dir / "tables" / "calibrated_thresholds.json",
         "figures": output_dir / "figures",
     }
 
@@ -278,8 +264,9 @@ def render_hero() -> None:
         <div class="app-hero">
             <h1>Dashboard eco-acustico</h1>
             <p>
-                Lectura de las salidas generadas por main_adjusted.py: datos,
-                exploracion, clustering, clasificacion, politica de decision e inferencia.
+                Visualizacion de resultados del pipeline de clasificacion: exploracion de datos,
+                reduccion dimensional, clustering, clasificacion supervisada y politica de decision
+                con umbrales probabilisticos.
             </p>
         </div>
         """,
@@ -287,32 +274,24 @@ def render_hero() -> None:
     )
 
 
-def render_context(purpose: str, interpretation: str) -> None:
-    st.markdown(
-        f"""
-        <div class="context-box">
-            <strong>Para que se usa:</strong> {purpose}<br>
-            <strong>Como interpretarlo:</strong> {interpretation}
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
+def _has_true_label(prediction_df: pd.DataFrame) -> bool:
+    return "true_species_id" in prediction_df.columns
 
 
 def require_outputs(paths: dict[str, Path]) -> bool:
     missing = [
         label
         for label, path in {
-            "metadata de main_adjusted.py": paths["run_metadata"],
+            "metadata del pipeline": paths["run_metadata"],
             "predicciones": paths["predictions"],
         }.items()
         if not path.exists()
     ]
     if missing:
-        st.warning("Faltan salidas generadas por `main_adjusted.py`: " + ", ".join(missing) + ".")
-        render_context(
-            "La interfaz consume archivos ya calculados por main_adjusted.py para evitar reentrenar desde Streamlit.",
-            "Ejecuta el pipeline ajustado y vuelve a abrir la app; entonces apareceran metricas, figuras y escenarios.",
+        st.warning("Faltan archivos necesarios: " + ", ".join(missing) + ".")
+        st.markdown(
+            "La interfaz lee resultados ya calculados por el pipeline para evitar reentrenar modelos desde Streamlit. "
+            "Ejecuta el pipeline primero y luego vuelve a abrir esta aplicacion."
         )
         st.code(PIPELINE_COMMAND, language="bash")
         return False
@@ -322,7 +301,7 @@ def require_outputs(paths: dict[str, Path]) -> bool:
     if producer != PIPELINE_SCRIPT:
         st.warning(
             f"La carpeta seleccionada fue generada por `{producer}`. "
-            f"Para esta app se esperan outputs de `{PIPELINE_SCRIPT}`."
+            f"Esta app espera salidas de `{PIPELINE_SCRIPT}`."
         )
         st.code(PIPELINE_COMMAND, language="bash")
         return False
@@ -388,7 +367,6 @@ def render_dataframe(df: pd.DataFrame, height: int | None = None) -> None:
 
 
 def decision_box(zone: str, confidence: float) -> None:
-    # P2_ML.pdf 3.5 - Visualiza la politica de confianza/incertidumbre/rechazo.
     color = ZONE_COLORS.get(zone, "#333333")
     label = ZONE_LABELS.get(zone, zone)
     message = ZONE_MESSAGES.get(zone, "")
@@ -403,58 +381,16 @@ def decision_box(zone: str, confidence: float) -> None:
     )
 
 
-def render_pipeline_run(paths: dict[str, Path], metadata: dict[str, Any]) -> None:
-    st.markdown("#### Corrida cargada")
-    render_context(
-        "Verifica que la interfaz esta leyendo resultados producidos por main_adjusted.py.",
-        "Si el script, target o mejor modelo no coinciden con tu ultima ejecucion, vuelve a correr el pipeline ajustado.",
-    )
-
-    best_classifier = metadata.get("best_classifier", {})
-    best_metrics = best_classifier.get("metrics", {})
-    best_name = "/".join(
-        str(value)
-        for value in [best_classifier.get("family"), best_classifier.get("model")]
-        if value
-    )
-
-    cols = st.columns(4)
-    cols[0].metric("Script", str(metadata.get("producer_script", "N/A")))
-    cols[1].metric("Target", str(metadata.get("target", "N/A")))
-    cols[2].metric("Features", str(metadata.get("feature_count", "N/A")))
-    cols[3].metric("F1 macro validacion", format_decimal(best_metrics.get("f1_macro")))
-
-    run_rows = [
-        ("Mejor clasificador", best_name or "N/A"),
-        ("Accuracy validacion", format_decimal(best_metrics.get("accuracy"))),
-        ("F1 weighted validacion", format_decimal(best_metrics.get("f1_weighted"))),
-        ("Inferencia ms/muestra", format_decimal(best_metrics.get("predict_ms_per_sample"), digits=3)),
-        ("Umbral confianza", format_percentage(metadata.get("confidence_threshold", ""))),
-        ("Umbral revision", format_percentage(metadata.get("review_threshold", ""))),
-        ("Generado", str(metadata.get("generated_at_local", "N/A"))),
-    ]
-    render_dataframe(pd.DataFrame(run_rows, columns=["campo", "valor"]))
-
-    adjusted_outputs = metadata.get("adjusted_outputs", [])
-    if adjusted_outputs:
-        output_status = pd.DataFrame(
-            [
-                {
-                    "artifact": artifact,
-                    "exists": (paths["run_metadata"].parent / artifact).exists(),
-                }
-                for artifact in adjusted_outputs
-            ]
-        )
-        st.markdown("#### Evidencia nueva del adjusted")
-        render_dataframe(output_status)
-
-
 def render_sidebar(prediction_df: pd.DataFrame) -> pd.DataFrame:
-    # P2_ML.pdf - Bonus Streamlit: escenarios precargados para simular inferencia.
     st.sidebar.header("Escenarios")
+
     zone_options = ["todas", *sorted(prediction_df["decision_zone"].dropna().unique())]
-    selected_zone = st.sidebar.selectbox("Filtrar por zona", zone_options)
+    zone_display = {"todas": "Todas las zonas", **ZONE_LABELS}
+    selected_zone = st.sidebar.selectbox(
+        "Filtrar por zona",
+        zone_options,
+        format_func=lambda x: zone_display.get(x, x),
+    )
 
     filtered_df = prediction_df.copy()
     if selected_zone != "todas":
@@ -464,10 +400,10 @@ def render_sidebar(prediction_df: pd.DataFrame) -> pd.DataFrame:
         st.sidebar.warning("No hay registros para ese filtro.")
         return prediction_df
 
-    zone_counts = filtered_df["decision_zone"].value_counts().to_dict()
     st.sidebar.caption("Distribucion filtrada")
-    for zone, count in zone_counts.items():
-        st.sidebar.write(f"{ZONE_LABELS.get(zone, zone)}: {count}")
+    for zone in ["confianza", "incertidumbre", "rechazo"]:
+        count = filtered_df["decision_zone"].value_counts().get(zone, 0)
+        st.sidebar.write(f"{ZONE_LABELS[zone]}: {count}")
     st.sidebar.caption(f"Registros disponibles: {len(filtered_df)}")
     return filtered_df
 
@@ -475,45 +411,123 @@ def render_sidebar(prediction_df: pd.DataFrame) -> pd.DataFrame:
 def render_project_overview(
     paths: dict[str, Path],
     prediction_df: pd.DataFrame | None = None,
-    metadata: dict[str, Any] | None = None,
 ) -> None:
-    st.subheader("Estado frente al PDF")
-    render_context(
-        "Resume que partes del enunciado cubre main_adjusted.py y que queda para el informe.",
-        "La app lee metadata, tablas y figuras ya generadas; lo pendiente externo es la tabla de contribuciones del equipo.",
+
+    st.markdown(
+        "Pipeline de clasificacion eco-acustica que procesa **64 coeficientes Mel** "
+        "de grabaciones de aves y anfibios. Aplica reduccion dimensional (PCA, t-SNE), "
+        "clustering no supervisado (GMM, DBSCAN), clasificacion supervisada con MLP y "
+        "ensambles, y una politica de decision basada en umbrales de confianza calibrados. "
+        "Esta seccion resume el desempeno global del modelo sobre los datos de prueba."
     )
 
-    if metadata is not None:
-        render_pipeline_run(paths, metadata)
+    if prediction_df is None:
+        return
 
-    checklist_df = pd.DataFrame(PROJECT_CHECKLIST)
-    render_dataframe(checklist_df)
+    confidence_mean = prediction_df["confidence"].mean()
+    zone_counts = prediction_df["decision_zone"].value_counts()
+    automatic_ratio = zone_counts.get("confianza", 0) / len(prediction_df)
+    review_ratio = zone_counts.get("incertidumbre", 0) / len(prediction_df)
+    reject_ratio = zone_counts.get("rechazo", 0) / len(prediction_df)
 
-    if prediction_df is not None:
-        confidence_mean = prediction_df["confidence"].mean()
-        automatic_ratio = (prediction_df["decision_zone"] == "confianza").mean()
-        summary_cols = st.columns(3)
-        summary_cols[0].metric("Registros en test", f"{len(prediction_df):,}")
-        summary_cols[1].metric("Confianza promedio", format_percentage(confidence_mean))
-        summary_cols[2].metric("Decision automatica", format_percentage(automatic_ratio))
+    # === Metricas principales ===
+    st.subheader("Metricas principales")
+    cols = st.columns(4)
+    cols[0].metric("Registros en test", f"{len(prediction_df):,}")
+    cols[1].metric("Confianza promedio", format_percentage(confidence_mean))
+    cols[2].metric("Decision automatica", format_percentage(automatic_ratio))
 
-    missing = [
-        label
-        for label, path in {
-            "resumen del dataset": paths["dataset_summary"],
-            "metadata de corrida": paths["run_metadata"],
-            "metricas de clasificacion": paths["classification_metrics"],
-            "metricas de reduccion": paths["dimensionality_metrics"],
-            "metricas de clustering": paths["clustering_metrics"],
-        }.items()
-        if not path.exists()
-    ]
-    if missing:
-        st.info("Faltan salidas por generar: " + ", ".join(missing) + ".")
+    if _has_true_label(prediction_df):
+        correct = (prediction_df["true_species_id"] == prediction_df["predicted_species_id"]).sum()
+        cols[3].metric("Aciertos", f"{correct:,} / {len(prediction_df):,}")
+    else:
+        cols[3].metric("Especies detectadas", f"{prediction_df['predicted_species_id'].nunique()}")
+
+    st.divider()
+
+    # === Distribucion por zona ===
+    st.subheader("Distribucion por zona operativa")
+    st.markdown(
+        "Las predicciones se clasifican en tres zonas segun la confianza del modelo. "
+        "Esto permite decidir que registros se aceptan automaticamente, cuales requieren "
+        "revision de un experto y cuales se descartan para evitar falsos positivos."
+    )
+    zone_data = pd.DataFrame({
+        "Zona": ["Confianza", "Incertidumbre", "Rechazo"],
+        "Cantidad": [
+            zone_counts.get("confianza", 0),
+            zone_counts.get("incertidumbre", 0),
+            zone_counts.get("rechazo", 0),
+        ],
+    })
+    zone_data["Porcentaje"] = zone_data["Cantidad"].apply(lambda x: f"{x / len(prediction_df):.1%}")
+
+    render_dataframe(zone_data[["Zona", "Cantidad", "Porcentaje"]])
+
+    chart_col, summary_col = st.columns([1, 1])
+    with chart_col:
+        st.bar_chart(zone_data.set_index("Zona")["Cantidad"], horizontal=True)
+    with summary_col:
+        st.markdown("**Interpretacion**")
+        if automatic_ratio > 0.5:
+            st.success(f"{format_percentage(automatic_ratio)} de las predicciones se aceptan automaticamente.")
+        else:
+            st.warning(f"Solo {format_percentage(automatic_ratio)} son automaticas; la mayoria requiere revision.")
+        if reject_ratio > 0.05:
+            st.error(f"{format_percentage(reject_ratio)} de registros son rechazados (confianza baja).")
+        if review_ratio > 0.3:
+            st.info(f"{format_percentage(review_ratio)} requieren revision experta.")
+
+
+    # === Rendimiento por especie ===
+    st.subheader("Rendimiento por especie")
+    st.markdown(
+        "Desglose de confianza promedio por cada especie que el modelo predice. "
+        "Las especies con mayor confianza son aquellas que el modelo reconoce con mas seguridad."
+    )
+    species_stats = prediction_df.groupby("predicted_species_id").agg(
+        Registros=("confidence", "count"),
+        Confianza_promedio=("confidence", "mean"),
+    ).reset_index()
+    species_stats["Especie"] = species_stats["predicted_species_id"].apply(species_label)
+    species_stats["Confianza_promedio"] = species_stats["Confianza_promedio"].apply(format_percentage)
+    render_dataframe(species_stats[["Especie", "Registros", "Confianza_promedio"]])
+
+    st.divider()
+
+    # === Conclusiones rapidas ===
+    st.subheader("Conclusiones rapidas")
+    conclusions = []
+
+    if _has_true_label(prediction_df):
+        acc = correct / len(prediction_df)
+        if acc > 0.7:
+            conclusions.append(f"**Precision global de {format_percentage(acc)}**: el modelo generaliza bien.")
+        elif acc > 0.4:
+            conclusions.append(f"**Precision global de {format_percentage(acc)}**: rendimiento moderado, mejorable con mas datos.")
+        else:
+            conclusions.append(f"**Precision global de {format_percentage(acc)}**: el modelo presenta dificultades, se recomienda revisar features.")
+
+    if automatic_ratio > 0.5:
+        conclusions.append(f"Alta autonomia: **{format_percentage(automatic_ratio)}** de decisiones son automaticas.")
+    else:
+        conclusions.append(f"Baja autonomia: solo **{format_percentage(automatic_ratio)}** son automaticas. El sistema prioriza la revision humana.")
+
+    if reject_ratio > 0.05:
+        conclusions.append(f"Mitigacion de riesgos: **{format_percentage(reject_ratio)}** de registros son rechazados para evitar falsos positivos.")
+
+    species_distribution = prediction_df["predicted_species_id"].value_counts()
+    most_common = species_distribution.idxmax()
+    conclusions.append(f"Especie mas predicha: **{species_label(most_common)}** ({species_distribution.max()} registros).")
+
+    species_count = prediction_df["predicted_species_id"].nunique()
+    conclusions.append(f"El modelo distingue entre **{species_count} especies** distintas.")
+
+    for c in conclusions:
+        st.write(f"- {c}")
 
 
 def render_inference_tab(prediction_df: pd.DataFrame, test_df: pd.DataFrame) -> None:
-    # P2_ML.pdf 3.5 - Pantalla principal de inferencia con probabilidades y umbral.
     filtered_df = render_sidebar(prediction_df)
     recording_ids = filtered_df["recording_id"].astype(str).tolist()
     selected_recording = st.sidebar.selectbox("Seleccionar recording_id", recording_ids)
@@ -529,9 +543,10 @@ def render_inference_tab(prediction_df: pd.DataFrame, test_df: pd.DataFrame) -> 
     zone = str(prediction_row["decision_zone"])
 
     st.subheader("Simulador de inferencia")
-    render_context(
-        "Permite revisar un registro de prueba y explicar la decision del modelo final.",
-        "La prediccion se acepta, revisa o rechaza segun la confianza maxima entre especies.",
+    st.markdown(
+        "Selecciona un registro de prueba desde la barra lateral para revisar como el modelo "
+        "lo clasifica. La prediccion se acepta automaticamente, se envia a revision experta "
+        "o se rechaza segun la confianza maxima entre todas las especies candidatas."
     )
 
     metric_columns = st.columns(4)
@@ -562,18 +577,20 @@ def render_inference_tab(prediction_df: pd.DataFrame, test_df: pd.DataFrame) -> 
     chart_columns = st.columns([1.05, 0.95])
     with chart_columns[0]:
         st.markdown("#### Probabilidades por especie")
-        render_context(
-            "Compara todas las clases candidatas para el registro seleccionado.",
-            "Una barra dominante indica decision estable; barras similares indican incertidumbre.",
+        st.markdown(
+            "Cada barra representa la probabilidad que el modelo asigna a cada clase "
+            "para este registro. Una barra claramente dominante indica una decision estable; "
+            "barras de altura similar senalan incertidumbre."
         )
         st.bar_chart(probability_df.set_index("species")["probability"])
         render_dataframe(probability_df)
 
     with chart_columns[1]:
         st.markdown("#### Vector Mel del registro")
-        render_context(
-            "Muestra las 64 variables acusticas que entran al clasificador.",
-            "Picos y valles describen la energia por bandas Mel; no son probabilidades.",
+        st.markdown(
+            "Las 64 variables acusticas (coeficientes Mel) que entran al clasificador. "
+            "Los picos y valles describen la distribucion de energia en distintas bandas "
+            "de frecuencia; no son probabilidades."
         )
         mel_df = selected_mel_table(test_row)
         st.line_chart(mel_df.set_index("mel_feature")["value"])
@@ -585,17 +602,17 @@ def render_dataset_tables(paths: dict[str, Path]) -> None:
 
     if paths["dataset_summary"].exists():
         st.markdown("#### Resumen del dataset")
-        render_context(
-            "Confirma particiones, variable objetivo, cantidad de features y valores faltantes.",
-            "Debe mostrar 64 features cuando se usa el espacio Mel puro pedido por el PDF.",
+        st.markdown(
+            "Confirma las particiones usadas (entrenamiento, validacion, prueba), "
+            "la variable objetivo, la cantidad de features (64 Mel) y si hay valores faltantes."
         )
         render_dataframe(load_csv(paths["dataset_summary"]))
 
     if paths["target_distribution"].exists():
         st.markdown("#### Distribucion del objetivo")
-        render_context(
-            "Mide cuantas muestras hay por especie antes de entrenar.",
-            "Si las clases estan desbalanceadas, F1 macro debe tener mas peso que accuracy.",
+        st.markdown(
+            "Cuantas muestras hay por especie antes de entrenar. Si las clases estan "
+            "desbalanceadas, la metrica F1 macro es mas representativa que el accuracy global."
         )
         target_df = load_csv(paths["target_distribution"])
         render_dataframe(target_df)
@@ -604,15 +621,15 @@ def render_dataset_tables(paths: dict[str, Path]) -> None:
 
 
 def render_metrics_tab(paths: dict[str, Path]) -> None:
-    # P2_ML.pdf 3.2-3.4 - Presenta metricas de reduccion, clustering y clasificacion.
     render_dataset_tables(paths)
 
     if paths["classification_metrics"].exists():
         metrics_df = load_csv(paths["classification_metrics"])
         st.markdown("#### Comparacion de clasificadores")
-        render_context(
-            "Elige el modelo final comparando MLP y ensambles con calidad y costo computacional.",
-            "El mejor candidato es el de mayor F1 macro; los tiempos muestran viabilidad operativa.",
+        st.markdown(
+            "Compara el rendimiento de MLP y ensambles (Random Forest, XGBoost) usando "
+            "F1 macro y costo computacional. El mejor candidato equilibra calidad predictiva "
+            "con velocidad de inferencia para ser viable en produccion."
         )
         render_dataframe(metrics_df)
         best_row = metrics_df.iloc[0]
@@ -624,17 +641,19 @@ def render_metrics_tab(paths: dict[str, Path]) -> None:
 
     if paths["test_metrics"].exists():
         st.markdown("#### Desempeno en test")
-        render_context(
-            "Verifica el rendimiento final sobre datos de prueba.",
-            "F1 macro resume el trato equilibrado entre especies; accuracy resume aciertos globales.",
+        st.markdown(
+            "Rendimiento final del modelo seleccionado sobre el conjunto de prueba. "
+            "F1 macro resume el equilibrio entre especies; accuracy global da una idea "
+            "general de aciertos."
         )
         render_dataframe(load_csv(paths["test_metrics"]))
 
     if paths["test_policy_summary"].exists():
         st.markdown("#### Distribucion por zona operativa")
-        render_context(
-            "Resume cuantas predicciones se aceptan automaticamente, se revisan o se rechazan.",
-            "Una proporcion alta en incertidumbre/rechazo indica que el sistema prioriza cautela.",
+        st.markdown(
+            "Cuantas predicciones caen en cada zona operativa. Una proporcion alta en "
+            "incertidumbre o rechazo indica que el sistema prioriza la cautela sobre "
+            "la automatizacion."
         )
         policy_df = load_csv(paths["test_policy_summary"])
         if "percentage" in policy_df.columns:
@@ -644,35 +663,36 @@ def render_metrics_tab(paths: dict[str, Path]) -> None:
 
     if paths["dimensionality_metrics"].exists():
         st.markdown("#### PCA vs t-SNE")
-        render_context(
-            "Compara reduccion lineal contra no lineal para entender la geometria del espacio Mel.",
-            "Mayor trustworthiness conserva mejor vecinos; PCA ademas reporta varianza explicada.",
+        st.markdown(
+            "Compara la reduccion lineal (PCA) contra la no lineal (t-SNE) para entender "
+            "la geometria del espacio Mel. Una mayor trustworthiness indica que se conservan "
+            "mejor los vecinos; PCA ademas reporta la varianza explicada por cada componente."
         )
         dimensionality_df = load_csv(paths["dimensionality_metrics"])
         render_dataframe(dimensionality_df)
 
     if paths["clustering_metrics"].exists():
         st.markdown("#### GMM vs DBSCAN")
-        render_context(
-            "Evalua estructura no supervisada y complementa la seleccion con BIC y k-distancia.",
-            "Silhouette y Calinski-Harabasz altos son mejores; Davies-Bouldin y BIC bajos son mejores.",
+        st.markdown(
+            "Evalua si hay estructura no supervisada en los datos antes de usar etiquetas. "
+            "Silhouette y Calinski-Harabasz altos indican clusters compactos; Davies-Bouldin "
+            "y BIC bajos son mejores."
         )
         clustering_df = load_csv(paths["clustering_metrics"])
         render_dataframe(clustering_df)
 
 
 def render_figures_tab(paths: dict[str, Path]) -> None:
-    # P2_ML.pdf 3.2-3.4 - Muestra las figuras que se pueden insertar en el informe.
     st.subheader("Figuras generadas")
-    render_context(
-        "Agrupa los graficos por etapa del pipeline para usarlos directamente en el informe.",
-        "Lee primero la finalidad de cada grafico y luego confirma si apoya la conclusion escrita.",
+    st.markdown(
+        "Graficos organizados por etapa del pipeline, listos para usar en el informe. "
+        "Cada figura incluye una breve descripcion de su proposito."
     )
 
     has_any_figure = any(
         (paths["figures"] / filename).exists()
         for group in FIGURE_GROUPS.values()
-        for _, filename, _, _ in group
+        for _, filename, _ in group
     )
     if not has_any_figure:
         st.info(f"Aun no hay figuras generadas. Ejecuta `{PIPELINE_COMMAND}`.")
@@ -680,8 +700,8 @@ def render_figures_tab(paths: dict[str, Path]) -> None:
 
     for group_name, figures in FIGURE_GROUPS.items():
         available = [
-            (title, paths["figures"] / filename, purpose, interpretation)
-            for title, filename, purpose, interpretation in figures
+            (title, paths["figures"] / filename, caption)
+            for title, filename, caption in figures
             if (paths["figures"] / filename).exists()
         ]
         if not available:
@@ -690,18 +710,19 @@ def render_figures_tab(paths: dict[str, Path]) -> None:
         st.markdown(f"#### {group_name}")
         for index in range(0, len(available), 2):
             cols = st.columns(2)
-            for col, (title, path, purpose, interpretation) in zip(cols, available[index : index + 2]):
+            for col, (title, path, caption) in zip(cols, available[index : index + 2]):
                 with col:
-                    st.markdown(f"##### {title}")
-                    render_context(purpose, interpretation)
+                    st.markdown(f"**{title}**")
                     st.image(str(path), use_container_width=True)
+                    st.caption(caption)
 
 
 def render_predictions_table(prediction_df: pd.DataFrame) -> None:
     st.markdown("#### Predicciones precalculadas")
-    render_context(
-        "Audita cada registro de prueba con etiqueta real, prediccion, confianza y probabilidades.",
-        "Sirve para justificar casos aceptados, casos enviados a revision y posibles errores.",
+    st.markdown(
+        "Tabla completa con cada registro de prueba, su etiqueta real (si esta disponible), "
+        "la prediccion del modelo, la confianza asociada, la zona de decision y las "
+        "probabilidades para todas las especies candidatas."
     )
 
     display_columns = [
@@ -721,9 +742,10 @@ def render_predictions_table(prediction_df: pd.DataFrame) -> None:
 
 def render_test_table(test_df: pd.DataFrame) -> None:
     st.markdown("#### Dataset de prueba")
-    render_context(
-        "Muestra las variables originales usadas por la interfaz y por las predicciones finales.",
-        "Las columnas mel_0 a mel_63 son el vector acustico; species_id es la referencia si existe.",
+    st.markdown(
+        "Variables originales del conjunto de prueba. Las columnas `mel_0` a `mel_63` "
+        "son el vector acustico de 64 coeficientes Mel; `species_id` es la referencia "
+        "si existe."
     )
     preview_columns = [
         column
@@ -747,9 +769,10 @@ def render_raw_reports(paths: dict[str, Path]) -> None:
         return
 
     st.markdown("#### Reportes textuales")
-    render_context(
-        "Complementan las tablas con precision, recall y F1 por clase.",
-        "Usalos para explicar que especies se predicen mejor y cuales requieren mas datos.",
+    st.markdown(
+        "Reportes detallados con precision, recall y F1 por cada clase. "
+        "Permiten identificar que especies se predicen mejor y cuales necesitan "
+        "mas datos de entrenamiento."
     )
     for title, path in available_reports:
         with st.expander(title):
@@ -757,10 +780,11 @@ def render_raw_reports(paths: dict[str, Path]) -> None:
 
 
 def render_metadata_table(metadata: dict[str, Any]) -> None:
-    st.markdown("#### Metadata de main_adjusted.py")
-    render_context(
-        "Audita la configuracion usada para crear las tablas, modelos, figuras y predicciones que muestra la app.",
-        "Debe indicar producer_script = main_adjusted.py; si no coincide, la app no usa esos outputs.",
+    st.markdown("#### Metadata del pipeline")
+    st.markdown(
+        "Configuracion completa usada por el pipeline para generar las tablas, modelos, "
+        "figuras y predicciones. Verifica que el `producer_script` sea el esperado; "
+        "si no coincide, los outputs no corresponden a esta aplicacion."
     )
     rows = [
         {"campo": key, "valor": json.dumps(value, ensure_ascii=False)}
@@ -770,6 +794,37 @@ def render_metadata_table(metadata: dict[str, Any]) -> None:
     render_dataframe(pd.DataFrame(rows), height=430)
 
 
+def render_classification_summary(filtered_df: pd.DataFrame) -> None:
+    st.markdown("#### Resumen de clasificacion por especie")
+    st.markdown(
+        "Rendimiento del modelo desglosado por cada especie. Una especie con alta "
+        "confianza promedio y muchos aciertos indica que el modelo la reconoce bien; "
+        "lo contrario sugiere que requiere mas datos o mejores features."
+    )
+    if not _has_true_label(filtered_df):
+        st.warning("No hay etiquetas reales disponibles para calcular precision por especie.")
+        return
+
+    summary = []
+    for species_id in sorted(filtered_df["predicted_species_id"].unique()):
+        subset = filtered_df[filtered_df["predicted_species_id"] == species_id]
+        total = len(subset)
+        correct = (subset["true_species_id"] == subset["predicted_species_id"]).sum()
+        accuracy = correct / total if total > 0 else 0
+        confidence = subset["confidence"].mean()
+        summary.append({
+            "Especie": species_label(species_id),
+            "Registros": total,
+            "Aciertos": correct,
+            "Precision": format_percentage(accuracy),
+            "Confianza promedio": format_percentage(confidence),
+        })
+    summary_df = pd.DataFrame(summary)
+    render_dataframe(summary_df)
+    if not summary_df.empty and "Registros" in summary_df.columns:
+        st.bar_chart(summary_df.set_index("Especie")["Registros"])
+
+
 def render_data_tab(
     prediction_df: pd.DataFrame,
     test_df: pd.DataFrame,
@@ -777,14 +832,20 @@ def render_data_tab(
     metadata: dict[str, Any],
 ) -> None:
     st.subheader("Datos usados por la interfaz")
+    st.markdown(
+        "Explora las tablas generadas por el pipeline: predicciones, rendimiento por "
+        "especie, dataset de prueba, reportes textuales y metadata de configuracion."
+    )
     table_choice = st.radio(
-        "Tabla a revisar",
-        ["Predicciones", "Dataset de prueba", "Reportes", "Metadata"],
+        "Selecciona una tabla para revisar",
+        ["Predicciones", "Resumen por especie", "Dataset de prueba", "Reportes", "Metadata"],
         horizontal=True,
     )
 
     if table_choice == "Predicciones":
         render_predictions_table(prediction_df)
+    elif table_choice == "Resumen por especie":
+        render_classification_summary(prediction_df)
     elif table_choice == "Dataset de prueba":
         render_test_table(test_df)
     elif table_choice == "Reportes":
@@ -794,14 +855,19 @@ def render_data_tab(
 
 
 def render_missing_outputs_page(paths: dict[str, Path]) -> None:
-    render_project_overview(paths)
-    st.subheader("Como generar la evidencia")
-    st.write(
-        "La app ya esta lista para mostrar resultados, pero necesita que main_adjusted.py cree la carpeta `outputs`."
+    st.markdown(
+        '<div class="section-explanation">',
+        unsafe_allow_html=True,
+    )
+    st.markdown(
+        "La aplicacion ya esta configurada para mostrar resultados, pero necesita "
+        "que el pipeline genere la carpeta `outputs` con las predicciones, tablas y "
+        "figuras. Ejecuta el comando correspondiente y vuelve a cargar esta pagina."
     )
     st.code(PIPELINE_COMMAND, language="bash")
-    st.write(
-        "Para una validacion mas rapida puedes omitir el MLP, aunque el informe completo debe incluirlo."
+    st.markdown(
+        "Para una validacion mas rapida puedes omitir el entrenamiento del MLP "
+        "(aunque el informe completo debe incluirlo)."
     )
     st.code(f"{PIPELINE_COMMAND} --skip-mlp", language="bash")
 
@@ -828,7 +894,7 @@ def main() -> None:
     )
 
     with overview_tab:
-        render_project_overview(paths, prediction_df, metadata)
+        render_project_overview(paths, prediction_df)
 
     with inference_tab:
         render_inference_tab(prediction_df, test_df)
@@ -844,4 +910,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+        main()
